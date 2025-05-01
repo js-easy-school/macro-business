@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мониторинг для Татнефти</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Мониторинг для инвестиций в Татнефть</h1>
+    
+    <div class="dashboard">
+        <div class="card" id="opec">
+            <h2>Новости OPEC+</h2>
+            <div class="content"></div>
+        </div>
+        
+        <div class="card" id="macro">
+            <h2>Макроэкономика РФ</h2>
+            <div class="content"></div>
+        </div>
+        
+        <div class="card" id="tatneft">
+            <h2>Отчеты Татнефти</h2>
+            <div class="content"></div>
+        </div>
+    </div>
+
+    <script>
+        // API sources
+        const APIs = {
+            opecNews: 'https://api.rss2json.com/v1/api.json?rss_url=http://www.opec.org/opec_web/en/rss.xml',
+            cbrRates: 'https://www.cbr-xml-daily.ru/daily_json.js',
+            tatneftNews: 'https://api.rss2json.com/v1/api.json?rss_url=https://www.tatneft.ru/press-centr/news?type=rss'
+        };
+
+        // DOM elements
+        const containers = {
+            opec: document.querySelector('#opec .content'),
+            macro: document.querySelector('#macro .content'),
+            tatneft: document.querySelector('#tatneft .content')
+        };
+
+        // Load data
+        async function loadData() {
+            // OPEC+ News
+            fetch(APIs.opecNews)
+                .then(r => r.json())
+                .then(data => {
+                    containers.opec.innerHTML = data.items.slice(0, 5).map(item => `
+                        <div class="news-item">
+                            <h3>${item.title}</h3>
+                            <p>${new Date(item.pubDate).toLocaleDateString()}</p>
+                            <a href="${item.link}" target="_blank">Читать →</a>
+                        </div>
+                    `).join('');
+                });
+
+            // Macroeconomic data
+            fetch(APIs.cbrRates)
+                .then(r => r.json())
+                .then(data => {
+                    containers.macro.innerHTML = `
+                        <div class="rate">
+                            <h3>Курс USD: ${data.Valute.USD.Value.toFixed(2)} ₽</h3>
+                            <p>Изменение: ${(data.Valute.USD.Value - data.Valute.USD.Previous).toFixed(2)} ₽</p>
+                        </div>
+                        <div class="rate">
+                            <h3>Курс EUR: ${data.Valute.EUR.Value.toFixed(2)} ₽</h3>
+                            <p>Изменение: ${(data.Valute.EUR.Value - data.Valute.EUR.Previous).toFixed(2)} ₽</p>
+                        </div>
+                    `;
+                });
+
+            // Tatneft News
+            fetch(APIs.tatneftNews)
+                .then(r => r.json())
+                .then(data => {
+                    containers.tatneft.innerHTML = data.items.slice(0, 5).map(item => `
+                        <div class="news-item">
+                            <h3>${item.title}</h3>
+                            <p>${new Date(item.pubDate).toLocaleDateString()}</p>
+                            <a href="${item.link}" target="_blank">Подробнее →</a>
+                        </div>
+                    `).join('');
+                });
+        }
+
+        // Initial load
+        loadData();
+        // Auto-refresh every 10 minutes
+        setInterval(loadData, 600000);
+    </script>
+</body>
+</html>
